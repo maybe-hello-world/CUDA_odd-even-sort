@@ -8,16 +8,13 @@
 
 // Debug level, possible values: 0 - 5, 5 is highest
 // Highest level will cause EXTREMELY detailed output (the whole array will be printed)
-__constant__ const int DEBUG_LEVEL = 5;
+__constant__ const int DEBUG_LEVEL = 4;
 
 // Array size for initialization, used only in inputArray functiont
-__constant__ const int G_ARRAY_SIZE = 16;
+__constant__ const int G_ARRAY_SIZE = 8192;
 
 // Number of threads inside of block
 __constant__ const int BLOCK_SIZE = 8;
-
-// Number of blocks
-__constant__ const int GRID_SIZE = G_ARRAY_SIZE / 2 / BLOCK_SIZE;
 
 int inputArray(int ** _arr) {
 	int arr_size = G_ARRAY_SIZE;
@@ -47,12 +44,23 @@ void outputArray(int * _arr, int arr_size) {
 		}
 		std::wcout << std::endl;
 	}
+	
+	bool sorted = true;
+	for (int i = 1; i < arr_size; i++) {
+		if (_arr[i] < _arr[i - 1]) {
+			sorted = false;
+			break;
+		}
+	}
+
+	if (DEBUG_LEVEL >= 1) std::wcout << "Array sorting check, sorted: " << std::boolalpha << sorted << std::endl;
 }
 
 // END OF USER AREA
 // ---------------------------------
 
-
+// Number of blocks
+__constant__ const int GRID_SIZE = G_ARRAY_SIZE / 2 / BLOCK_SIZE;
 
 void pause() {
 	std::wcout << "Press enter to continue . . . " << std::endl;
@@ -74,7 +82,7 @@ bool inline cudaErrorOccured(cudaError_t _cudaStatus) {
 	return false;
 }
 
-__device__ bool D_SORTED= false;
+__device__ bool D_SORTED = false;
 
 __device__ inline void swap(int * arr, int i, int j) {
 	int tmp = arr[i];
@@ -140,7 +148,7 @@ void oddevensort(int * arr, int arr_size) {
 		counter++;
 	}
 
-	if (DEBUG_LEVEL >= 1) std::cout << "Sorting finished, counter value: " << counter << std::endl;
+	if (DEBUG_LEVEL >= 1) std::cout << "Sorting finished, iterations: " << counter << std::endl;
 }
 
 int main()
@@ -208,6 +216,10 @@ int main()
 
 	//3. Сортировка
 	oddevensort(d_arr, arr_size);
+
+	cudaStatus = cudaGetLastError();
+	if (cudaErrorOccured(cudaStatus)) return 1;
+
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaErrorOccured(cudaStatus)) return 1;
 
@@ -231,8 +243,9 @@ int main()
 	
 	if (DEBUG_LEVEL >= 1) {
 		std::wcout << "Program finished" << std::endl;
-		pause();
 	}
+
+	if (DEBUG_LEVEL >= 2) pause();
     return 0;
 }
 
